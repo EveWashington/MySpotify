@@ -1,0 +1,4 @@
+"0","ggplot(allTopTracks, aes(x = rangenum, y = rank, group = name)) +"
+"0","  geom_line(aes(alpha = 1), size = 2) +"
+"0","  #geom_point(aes(color = team, alpha = 1), size = 4) +"
+"0","  scale_y_reverse(breaks = 1:nrow(allTopTracks))"

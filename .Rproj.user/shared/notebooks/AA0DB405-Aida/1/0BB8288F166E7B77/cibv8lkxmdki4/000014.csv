@@ -1,0 +1,4 @@
+"0","spreadartists <- allTopArtists %>% select(name, range, rank) %>% spread(range, name)"
+"0",""
+"0","write.csv(spreadartists, ""results/artists.csv"", row.names = FALSE)"
+"0",""

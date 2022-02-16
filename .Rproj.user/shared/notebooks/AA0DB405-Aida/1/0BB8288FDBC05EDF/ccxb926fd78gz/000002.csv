@@ -1,0 +1,6 @@
+"0","id <- 'a748b3ec8c3c4e64a403fdea99a8844e'"
+"0","secret <- '4520f0162ac04fcaa082ddd260649b45'"
+"0","Sys.setenv(SPOTIFY_CLIENT_ID = id)"
+"0","Sys.setenv(SPOTIFY_CLIENT_SECRET = secret)"
+"0","access_token <- get_spotify_access_token()"
+"0","#BQCjIJWpjMfS4Af2RgksAkFI-9Cm7gYxJft7W7rmlFrQxCKvslYi08U-f_TNGbyNPMZUS6EZ-AtrAZXbyyY"

@@ -1,0 +1,6 @@
+"0","allTopTracks %>%                               # Replacing values"
+"0","  mutate(album.name = replace(album.name, album.name != ""Aida"", ""Not Aida"")) %>%"
+"0","  ggplot(aes(x = rangenum, y = rank, group = name)) +"
+"0","  geom_line(aes(color = album.name, alpha=1), size = 2) +"
+"0","  geom_point(aes(color = album.name), size = 4) +"
+"0","  scale_y_reverse(breaks = 1:nrow(allTopTracks))"

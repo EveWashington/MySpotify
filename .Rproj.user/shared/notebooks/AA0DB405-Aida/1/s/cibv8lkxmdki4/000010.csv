@@ -1,0 +1,7 @@
+"0","spreadartists <- allTopArtists %>% select(name, range, rank) %>% spread(range, name)"
+"0",""
+"0","write.csv(spreadartists, ""/results/artists.csv"")"
+"2","cannot open file '/results/artists.csv': No such file or directory"
+"2","Error in file(file, ifelse(append, ""a"", ""w"")) : 
+  cannot open the connection
+"
