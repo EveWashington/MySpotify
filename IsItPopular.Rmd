@@ -1,0 +1,399 @@
+---
+title: "How basic Is Our Spotifies"
+output: html_notebook
+---
+
+We're gonna try to use spotify data to see how basic my music choices are
+
+```{r setup, warning=FALSE, message=FALSE, include=FALSE}
+packages.used=as.list(
+  c("dplyr",
+    "spotifyr",
+    "plotly",
+    "httpuv",
+    "rbind",
+    "tidy",
+    "ggplot2", 
+    "jsonlite", 
+    "igraph",
+    "d3r",
+    "ggExtra")
+)
+
+check.pkg = function(x){
+  if(!require(x, character.only=T)) install.packages(x, 
+                                                     character.only=T,
+                                                     dependence=T)
+}
+lapply(packages.used, check.pkg)
+
+```
+
+With the Spotify API we can pull my top Artists, and some data assciated with each of them 
+
+```{r make token, include=FALSE}
+id <- 'a748b3ec8c3c4e64a403fdea99a8844e'
+secret <- '4520f0162ac04fcaa082ddd260649b45'
+Sys.setenv(SPOTIFY_CLIENT_ID = id)
+Sys.setenv(SPOTIFY_CLIENT_SECRET = secret)
+access_token <- get_spotify_access_token()
+#BQCjIJWpjMfS4Af2RgksAkFI-9Cm7gYxJft7W7rmlFrQxCKvslYi08U-f_TNGbyNPMZUS6EZ-AtrAZXbyyY
+```
+
+Lets start with my top tracks of all time, we are particually interested in the popularity column
+
+```{r}
+#gonna import all just so we have them later
+Sartists <- get_my_top_artists_or_tracks(50, type = "artists", time_range = "short_term")  %>%
+     mutate(range = "short") %>%
+     mutate(rangenum = 1) %>%
+     mutate(rank = row_number())
+
+Martists <- get_my_top_artists_or_tracks(50, type = "artists", time_range = "medium_term") %>%
+     mutate(range = "mid") %>%
+     mutate(rangenum = 2) %>%
+     mutate(rank = row_number())
+
+Lartists<- get_my_top_artists_or_tracks(50, type = "artists", time_range = "long_term") %>%
+     mutate(range = "long") %>%
+     mutate(rangenum = 3) %>%
+     mutate(rank = row_number())
+
+topartists <- list(Sartists, Martists, Lartists)
+
+allTopArtists <- do.call('rbind', topartists)
+
+```
+
+I think a box and wiskers plot is gonna be the best option for visualing this
+
+```{r}
+#eve
+allTopArtists %>%
+  ggplot( aes(x=range, y=popularity)) +
+    geom_boxplot() #+
+    #geom_jitter(color="black", size=0.4, alpha=0.9) 
+   
+```
+
+```{r}
+load("results/lordTopArtists.Rdata")
+tempTopArtists %>%
+  ggplot( aes(x=range, y=popularity)) +
+    geom_boxplot() #+
+```
+```{r}
+load("results/desuTopArtists.Rdata")
+tempTopArtists %>%
+  ggplot( aes(x=range, y=popularity)) +
+    geom_boxplot()
+```
+```{r}
+load("results/SelahTopArtists.Rdata")
+tempTopArtists %>%
+  ggplot( aes(x=range, y=popularity)) +
+    geom_boxplot()
+```
+```{r}
+load("results/cindyTopArtists.Rdata")
+tempTopArtists %>%
+  ggplot( aes(x=range, y=popularity)) +
+    geom_boxplot()
+```
+```{r}
+load("results/claudiaTopArtists.Rdata")
+tempTopArtists %>%
+  ggplot( aes(x=range, y=popularity)) +
+    geom_boxplot()
+```
+
+Let's try violin 
+
+```{r}
+allTopArtists %>%
+  ggplot( aes(x=range, y=popularity)) +
+    geom_violin() #+
+    #geom_jitter(color="black", size=0.4, alpha=0.9) 
+   
+```
+
+What happens if we look at a diffrent var. So lets see if total.followers looks any different
+
+```{r}
+allTopArtists %>%
+  ggplot( aes(x=range, y=log(followers.total))) +
+    geom_boxplot() +
+    geom_jitter(color="black", size=0.4, alpha=0.9) 
+
+   
+```
+okay wanna test scaling the popularty score by how highly ranked an artist is
+
+```{r}
+#eve
+allTopArtists %>%
+  mutate(moddedpop = (popularity*(51-rank))/50) %>% #I think/100 does not work.... 
+  ggplot( aes(x=range, y=moddedpop)) +
+    geom_boxplot() #
+    #geom_jitter(color="black", size=0.4, alpha=0.9) 
+   
+```
+```{r}
+load("results/desuTopArtists.Rdata")
+tempTopArtists %>%
+  mutate(moddedpop = (popularity*(51-rank))/50) %>% #I think/100 does not work.... 
+  ggplot( aes(x=range, y=moddedpop)) +
+    geom_boxplot() #
+    #geom_jitter(color="black", size=0.4, alpha=0.9) 
+```
+```{r}
+names = c("Eve", "desu", "cindy", "lord", "claudia", "Selah")
+NamesDataframes = list()
+dir <- "results/"
+
+for (i in 1:length(names)){
+  filename <- paste(names[i], "TopArtists", sep="")
+  
+  #save as an Rdata object to keep the list cols
+  load(file=paste(dir, filename, ".Rdata", sep = ""))
+  
+  NamesDataframes[[i]] <- tempTopArtists
+
+}
+
+allusersartists<- do.call("rbind", NamesDataframes)
+
+```
+
+```{r}
+
+allusersartists %>%
+  filter(range=="long") %>%
+  #mutate(moddedpop = (popularity*(51-rank))/50) %>% #I think/100 does not work.... 
+  ggplot( aes(x=userName, y=popularity)) +
+    #geom_violin() +
+    geom_boxplot() +
+    geom_jitter(color="black", size=0.4, alpha=0.9) 
+    
+  
+```
+```{r}
+allusersartists %>%
+  filter(range=="long") %>%
+  mutate(moddedpop = (popularity*(51-rank))/50) %>% #I think/100 does not work.... 
+  ggplot( aes(x=userName, y=moddedpop)) +
+    #geom_violin() +
+    geom_boxplot() +
+    geom_jitter(color="black", size=0.4, alpha=0.9) 
+  
+```
+
+Slightly diffrent, but not intresting enough for me. do some other plotting disrpubion chart but just bc im curous 
+
+```{r}
+#long artist only
+p <- ggplot(Lartists, aes(x=(followers.total), y=popularity, color=51-rank, size=rank)) +
+      geom_point() 
+p
+
+```
+Okay so I discovered that popularty is logmarithcally related to total followers. to compleat the test
+
+```{r}
+ggMarginal(p, type="histogram")
+
+```
+
+While understanding how spotify works is interesting,  we only really care about one OR the other (or some new calculated metric ). Rank in comparisons to popularity seems more interesting no? 
+
+```{r}
+ggplot(allTopArtists, aes(x=rank, y=popularity, color=range, size=51-rank)) +
+      geom_point() 
+
+```
+
+I am overwhelmingly at the 80 popularity space, but this des sugges that my extremes are lower rankings. Across all 3 time ranges the loswest (<50 popular), is isolated at the tops. So my top 20 artists exist in a lager range of popularity scores than my 20-50 ranked artiat
+
+
+# Lets make an adgency matrix 
+
+Okay so we have a list of names, Its called names lol. Lets do a for loop 
+
+```{r}
+matrix <- list()
+
+for (i in 1:length(names)){
+  row <- list()
+  list1 <- allusersartists %>%
+    filter(range == "long") %>%
+    filter(userName == names[i])
+  list1 <- as.list(list1)
+  list1 <- list1[[5]]
+  for(j in 1:length(names)){
+    if (i != j){
+      list2 <- allusersartists %>%
+        filter(range == "long") %>%
+        filter(userName == names[j])
+      list2 <- as.list(list2)
+      list2 <- list2[[5]]
+      
+      row[j] <- length(intersect(list1, list2))
+    }
+    else{
+      row[j]=0
+    }
+    
+  }
+  matrix[[i]] <- row
+}
+
+
+
+```
+
+
+```{r}
+u <- as.character(unlist(matrix, recursive=FALSE))
+adjmatrix <- matrix(as.integer(u), nrow=6, byrow=TRUE)
+#do <- data.frame(my.var=names(my.stuff), do, stringsAsFactors=FALSE)
+rownames(adjmatrix) <- names
+colnames(adjmatrix) <- names
+#write.table(do, file="output/thresholdresults-twitter.csv", sep=",", col.names = NA, row.names = TRUE)
+adjmatrix
+```
+```{r}
+# Transform it in a graph format
+network <- graph_from_adjacency_matrix(adjmatrix, weighted=TRUE, "undirected")
+
+# Transform it in a JSON format for d3.js
+data_json <- d3_igraph(network)
+
+# Save this file
+write(data_json, "adjmatrix.json")
+```
+
+okay in part bc i think this is what i should have done in the firstplace , but also for shits and gigs lests make an edge list!
+
+```{r}
+
+edgelist <- list()
+
+for (i in 1:length(names)){
+  row <- list(names[i])
+  list1 <- allusersartists %>%
+    filter(range == "long") %>%
+    filter(userName == names[i])
+  list1 <- as.list(list1)
+  list1 <- list1[[5]]
+  for(j in 1:length(names)){
+    if (i != j){
+      list2 <- allusersartists %>%
+        filter(range == "long") %>%
+        filter(userName == names[j])
+      list2 <- as.list(list2)
+      list2 <- list2[[5]]
+      if(length(intersect(list1, list2)) > 0){
+         row[2] <- list(names[j])
+         row[3] <- length(intersect(list1, list2))
+         row[[4]] <- c(intersect(list1, list2))
+         
+      }
+      
+      edgelist[[length(edgelist) + 1]] <- row
+    }
+
+    
+  }
+
+}
+
+```
+
+Immediate issue with this edge list is that they  are duplicated lmaoooo that might be okay but i have an idea to fix it (undertone: I hate thinkinking i know how to do things, always makes me wanna fix problems)
+
+```{r}
+
+
+edgelist <- list()
+
+for (i in 1:length(names)){
+  #row <- list(names[i])
+  list1 <- allusersartists %>%
+    filter(range == "long") %>%
+    filter(userName == names[i])
+  list1 <- as.list(list1)
+  list1 <- list1[[5]]
+  for(j in 1:length(names)){
+    if (i != j){
+      list2 <- allusersartists %>%
+        filter(range == "long") %>%
+        filter(userName == names[j])
+      list2 <- as.list(list2)
+      list2 <- list2[[5]]
+      if(length(intersect(list1, list2)) > 0){
+         row <- sort(c(names[i], names[j]))
+         row <- as.list(row)
+         #row[2] <- list(names[j])
+         row[3] <- length(intersect(list1, list2))
+         #row[[4]] <- c(intersect(list1, list2))
+         
+      }
+      
+      edgelist[[length(edgelist) + 1]] <- row
+    }
+  }
+
+}
+
+```
+
+
+```{r}
+get_intersection <- function(name1, name2) {
+  list1 <- allusersartists %>%
+    filter(range == "long") %>%
+    filter(userName == name1)
+  list1 <- as.list(list1)
+  list1 <- list1[[5]]
+  
+  list2 <- allusersartists %>%
+        filter(range == "long") %>%
+        filter(userName == name2)
+  list2 <- as.list(list2)
+  list2 <- list2[[5]]
+      
+  return(intersect(list1, list2))
+  
+}
+```
+
+
+Now we have a list of lists lets make it a dataframe
+```{r}
+u <- as.character(unlist(edgelist, recursive=FALSE))
+edgelistdo <- matrix(u, nrow=length(edgelist), byrow=TRUE)
+#do <- data.frame(my.var=names(my.stuff), do, stringsAsFactors=FALSE)
+#rownames(do) <- names
+colnames(edgelistdo) <- c("start", 'end', 'weight')
+
+edgelistdo <- as.data.frame(edgelistdo) %>%
+  mutate(weight = as.numeric(weight)) #%>%
+  #mutate(list = unlist(get_intersection(start, end)))
+
+```
+
+
+
+```{r}
+edgelistdo
+```
+
+now we just gotta remove duplicates
+```{r}
+edgelistdo <- edgelistdo %>%
+  distinct(start, end, weight, .keep_all = TRUE)
+
+#write.table(edgelistdo, file="results/edgelist.csv", sep=",", col.names = TRUE, row.names = FALSE)
+write_json(edgelistdo, path="results/edgelist.json",)
+```
+
