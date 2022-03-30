@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+
+<!-- Load d3.js -->
+<script src="https://d3js.org/d3.v6.js"></script>
+
+<!-- Create a div where the graph will take place -->
+<div id="my_dataviz"></div>
+
+<script>
+
+    // set the dimensions and margins of the graph
+    const margin = {top: 20, right: 30, bottom: 20, left: 30},
+      width = 450 - margin.left - margin.right,
+      height = 300 - margin.top - margin.bottom;
+    
+    // append the svg object to the body of the page
+    const svg = d3.select("#my_dataviz")
+      .append("svg")
+      .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+      .attr("transform",`translate(${margin.left},${margin.top})`);
+    
+    // Read dummy data
+    d3.json("adjmatrix.json").then(function(data) {
+      // List of node names
+      const allNodes = data.nodes.map(d=>d.name)
+    
+      // A linear scale to position the nodes on the X axis
+      const x = d3.scalePoint()
+        .range([0, width])
+        .domain(allNodes)
+    
+      // Add the circle for the nodes
+      const nodes = svg
+        .selectAll("mynodes")
+        .data(data.nodes)
+        .join("circle")
+        .attr("cx", d => x(d.name) )
+        .attr("cy", height-30)
+        .attr("r", 8)
+        .style("fill", "#69b3a2")
+    
+      // And give them a label
+      const labels = svg
+        .selectAll("mylabels")
+        .data(data.nodes)
+        .join("text")
+        .attr("x", d=>x(d.name))
+        .attr("y", height-10)
+        .text(d=>(d.name))
+        .style("text-anchor", "middle")
+    
+      // Add links between nodes. Here is the tricky part.
+      // In my input data, links are provided between nodes -id-, NOT between node names.
+      // So I have to do a link between this id and the name
+      const idToNode = {};
+      data.nodes.forEach(function (n) {
+        idToNode[n.id] = n;
+      });
+      // Cool, now if I do idToNode["2"].name I've got the name of the node with id 2
+    
+      // Add the links
+      const links = svg
+        .selectAll('mylinks')
+        .data(data.links)
+        .join('path')
+        .attr('d', d=> {
+          start = x(idToNode[d.source].name)    // X position of start node on the X axis
+          end = x(idToNode[d.target].name)      // X position of end node
+          return ['M', start, height-30,    // the arc starts at the coordinate x=start, y=height-30 (where the starting node is)
+                  'A',                            // This means we're gonna build an elliptical arc
+                  (start - end)/2, ',',    // Next 2 lines are the coordinates of the inflexion point. Height of this point is proportional with start - end distance
+                  (start - end)/2, 0, 0, ',',
+                    start < end ? 1 : 0, end, ',', height-30] // We always want the arc on top. So if end is before start, putting 0 here turn the arc upside down.
+                    .join(' ');
+          })
+          .style("fill", "none")
+          .attr("stroke", "black")
+          .attr("stroke-width", d => d.weight)
+
+        nodes.raise()
+          
+        // create a tooltip
+        var Tooltip = d3.select("#my_dataviz")
+          .append("div")
+          .style("opacity", 0)
+          .attr("class", "tooltip")
+          .style("background-color", "white")
+          .style("border", "solid")
+          .style("border-width", "2px")
+          .style("border-radius", "5px")
+          .style("padding", "5px")
+         // .style("max-width", "300px")
+          
+        // Add the highlighting functionality
+        nodes
+          .on('mouseover', function(event,d){
+            // Highlight the nodes: every node is grey except him
+            d3.select(this).raise() 
+            nodes.style('fill', "#B8B8B8")
+            d3.select(this).style('fill', '#69b3b2')
+            // Highlight the connections
+            links
+              .style('stroke', a=>  a.source === d.id || a.target === d.id ? '#69b3b2' : '#b8b8b8')
+             // .style('stroke-width', a=>a.source === d.id || a.target === d.id ? d.weight*4 : d.weight)
+
+            console.log(d3.pointer(event)[0]+70 + "px")
+            
+
+            var xpos = parseFloat(d3.pointer(event)[0]+10)
+            var ypos = parseFloat(d3.pointer(event)[1])
+
+            Tooltip
+              .attr("transform", (d, i) => `translate(${xpos},${ypos})`)
+              .style("opacity", 1)
+              .html("Top 50 Artists: " + d.artist_list)
+              //.style("left", (d3.pointer(event)[0]+70) + " px")
+              //.style("top", (d3.pointer(event)[1]) + "px")
+
+            // var xpos = parseFloat(d3.pointer(event)[0]+10)
+            // var ypos = parseFloat(d3.pointer(event)[1])
+
+            // var tgrp = svg.append("g")
+            //   .attr("id", "tooltip")
+            //   .attr("transform", (d, i) => `translate(${xpos},${ypos})`);
+            // // tgrp.append("rect")
+            // //   .attr("width", "140px")
+            // //   .attr("height", "22px")
+            // //   .attr("fill", "burlywood")
+            // tgrp.append("text")
+            //   .attr("x", 5)
+            //   .attr("y", 14)
+            //   .attr("text-anchor", "left")
+            //   .attr("font-family", "sans-serif")
+            //   .attr("font-size", "11px")
+            //   .attr("font-weight", "bold")
+            //   .attr("fill", "black")
+            //   .text(`Top 50 Artists: ${d.artist_list}`);
+
+
+          })
+
+          .on('mouseout', function(event,d){
+            nodes
+              .style('fill', "#69b3a2")
+              . raise()
+            
+            links
+              .style('stroke', 'black')
+              .style('stroke-width', d => d.weight)
+            
+              // d3.select("#tooltip").remove();
+            Tooltip
+              .style("opacity", 0)
+
+          })
+
+        links
+          .on('mouseover', function(event,d){
+            d3.select(this).raise() 
+            links.style('stroke', "#B8B8B8")
+            d3.select(this).style('stroke', '#69b3b2')
+           
+            nodes
+              .style('fill', a=>  a.id === d.source || a.id === d.target ? '#69b3b2' : '#b8b8b8')
+
+            Tooltip
+              .style("opacity", 1)
+              .html("Shared Top Artists: " + d.intersect)
+              .style("left", (d3.pointer(event)[0]+70) + "px")
+              .style("top", (d3.pointer(event)[1]) + "px")
+
+          })
+          .on('mouseout', function(event,d){
+            links.style('stroke', 'black')
+            nodes
+              .style('fill', "#69b3a2")
+              .raise() 
+            
+            Tooltip
+              .style("opacity", 0)
+          })
+    
+  
+    })
+    
+    </script>

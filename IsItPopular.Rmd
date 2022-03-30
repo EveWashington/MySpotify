@@ -147,7 +147,7 @@ tempTopArtists %>%
     #geom_jitter(color="black", size=0.4, alpha=0.9) 
 ```
 ```{r}
-names = c("Eve", "desu", "cindy", "lord", "claudia", "Selah")
+names = c("Eve", "desu", "cindy", "lord", "claudia", "Selah", "shubham")
 NamesDataframes = list()
 dir <- "results/"
 
@@ -244,27 +244,49 @@ for (i in 1:length(names)){
     }
     
   }
+  #row[length(names) + 1 ] <- toString(list1)
   matrix[[i]] <- row
 }
-
 
 
 ```
 
 
+
 ```{r}
+
 u <- as.character(unlist(matrix, recursive=FALSE))
-adjmatrix <- matrix(as.integer(u), nrow=6, byrow=TRUE)
+adjmatrix <- matrix(as.integer(u), nrow=length(names), byrow=TRUE)
 #do <- data.frame(my.var=names(my.stuff), do, stringsAsFactors=FALSE)
+
 rownames(adjmatrix) <- names
+
 colnames(adjmatrix) <- names
 #write.table(do, file="output/thresholdresults-twitter.csv", sep=",", col.names = NA, row.names = TRUE)
 adjmatrix
 ```
 ```{r}
+#make this a graph and add some metadata
+
 # Transform it in a graph format
 network <- graph_from_adjacency_matrix(adjmatrix, weighted=TRUE, "undirected")
 
+#add all the artist list to vertex data
+for(vrtx in V(network)$name) {
+  V(network)[vrtx]$artist_list <- toString(get_artist_list(vrtx))
+}
+
+#add overlap to edge data
+for(i in 1:length(E(network))) {
+  n1 = head_of(network, E(network)[i])$name
+  n2 = tail_of(network, E(network)[i])$name
+  E(network)[i]$intersect <- toString(get_intersection(n1, n2))
+}
+
+```
+
+```{r}
+#export grapg
 # Transform it in a JSON format for d3.js
 data_json <- d3_igraph(network)
 
@@ -272,7 +294,31 @@ data_json <- d3_igraph(network)
 write(data_json, "adjmatrix.json")
 ```
 
-okay in part bc i think this is what i should have done in the firstplace , but also for shits and gigs lests make an edge list!
+### helper functions
+```{r}
+get_artist_list <- function(n){
+  list1 <- allusersartists %>%
+    filter(range == "long") %>%
+    filter(userName == n)
+  list1 <- as.list(list1)
+  list1 <- list1[[5]]
+  
+  return(list1)
+}
+
+get_intersection <- function(name1, name2) {
+  
+  list1 <- get_artist_list(name1)
+  list2 <- get_artist_list(name2)
+
+  return(intersect(list1, list2))
+  
+}
+```
+
+
+## you where wrong, adj matrx is the right thing. so this is a minor waste time but you learned shit and did end up using a function you made here to get it done!! #gigs
+okay in part bc i think this is what i should have done in the firstplace , but also for shits and gigs lests make an edge list! 
 
 ```{r}
 
@@ -349,19 +395,34 @@ for (i in 1:length(names)){
 
 
 ```{r}
-get_intersection <- function(name1, name2) {
+#the only useful part of this (why i didn't do this to start idk)
+#(Cleaned up and Copied this to above this chaos)
+
+get_artist_list <- function(n){
   list1 <- allusersartists %>%
     filter(range == "long") %>%
-    filter(userName == name1)
+    filter(userName == n)
   list1 <- as.list(list1)
   list1 <- list1[[5]]
   
-  list2 <- allusersartists %>%
-        filter(range == "long") %>%
-        filter(userName == name2)
-  list2 <- as.list(list2)
-  list2 <- list2[[5]]
-      
+  return(list1)
+}
+
+get_intersection <- function(name1, name2) {
+  # list1 <- allusersartists %>%
+  #   filter(range == "long") %>%
+  #   filter(userName == name1)
+  # list1 <- as.list(list1)
+  # list1 <- list1[[5]]
+  
+  list1 <- get_artist_list(name1)
+  list2 <- get_artist_list(name2)
+  # list2 <- allusersartists %>%
+  #       filter(range == "long") %>%
+  #       filter(userName == name2)
+  # list2 <- as.list(list2)
+  # list2 <- list2[[5]]
+  #     
   return(intersect(list1, list2))
   
 }
